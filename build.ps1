@@ -45,6 +45,11 @@ if (-not (Test-Path "$desktopPath\LiveCaption.exe")) {
     exit 1
 }
 
+Copy-Item `
+    ".\Config.json" `
+    "$desktopPath\Config.json" `
+    -Force
+
 Write-Host "Dispatch to 240..."
 
 robocopy `

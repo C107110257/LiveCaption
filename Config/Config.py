@@ -1,39 +1,55 @@
-# Config.py
-
 from pathlib import Path
+import json
+import sys
 
-# 共用模型目錄
-MODELS_DIR = r"\\192.168.0.240\project\Ken_Lin\models"
+if getattr(sys, "frozen", False):
+    BASE_DIR = Path(sys.executable).parent
+else:
+    BASE_DIR = Path(__file__).resolve().parent.parent
 
-MODEL_PATH_base = (
-    rf"{MODELS_DIR}\Systranfaster-whisper-base"
+CONFIG_FILE = BASE_DIR / "config.json"
+
+with open(
+    CONFIG_FILE,
+    "r",
+    encoding="utf-8"
+) as f:
+    config = json.load(f)
+
+MODELS_DIR = config["models_dir"]
+
+whisper_model = str(
+    Path(MODELS_DIR)
+    / config["whisper_model"]
 )
 
-MODEL_PATH_Translate = (
-    rf"{MODELS_DIR}\nllb-200-distilled-600M"
+translate_model = str(
+    Path(MODELS_DIR)
+    / config["translate_model"]
 )
 
-# 檢查模型是否存在
+translate_model_ct2 = str(
+    Path(MODELS_DIR)
+    / config["translate_model_ct2"]
+)
+
 for model_path in (
-    MODEL_PATH_base,
-    MODEL_PATH_Translate,
+    whisper_model,
+    translate_model,
+    translate_model_ct2,
 ):
     if not Path(model_path).exists():
         raise FileNotFoundError(
             f"模型不存在：{model_path}"
         )
 
+SAMPLE_RATE = config["sample_rate"]
+WINDOW_SECONDS = config["window_seconds"]
+STEP_SECONDS = config["step_seconds"]
+BEAM_SIZE = config["beam_size"]
+MAX_AUDIO_QUEUE = config["max_audio_queue"]
+MAX_TEXT_QUEUE = config["max_text_queue"]
+WORKER_COUNT = config["worker_count"]
 
-SAMPLE_RATE = 16000
-
-WINDOW_SECONDS = 4
-
-STEP_SECONDS = 2
-
-BEAM_SIZE = 3
-
-MAX_AUDIO_QUEUE = 4
-
-MAX_TEXT_QUEUE = 20
-
-WORKER_COUNT = 1
+WHISPER_CPU_THREADS = config.get("whisper_cpu_threads", 4)
+TRANSLATOR_INTRA_THREADS = config.get("translator_intra_threads", 4)

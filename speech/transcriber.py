@@ -1,19 +1,25 @@
-# speech/transcriber.py
 import numpy as np
 
 from faster_whisper import WhisperModel
-from Config.Config import BEAM_SIZE, MODEL_PATH_base
+from Config.Config import *
 
 
 class AudioTranscriber:
 
     def __init__(self):
-        print(MODEL_PATH_base)
-        self.model = WhisperModel(MODEL_PATH_base, device="cpu", compute_type="int8")
+        print(whisper_model)
+        self.model = WhisperModel(
+            whisper_model,
+            device="cpu",
+            compute_type="int8",
+            cpu_threads=WHISPER_CPU_THREADS,
+            num_workers=1,
+        )
 
     def transcribe(self, audio):
 
         audio = np.mean(audio, axis=1).astype(np.float32)
+        audio_duration = len(audio) / SAMPLE_RATE
 
         segments, _ = self.model.transcribe(
             audio,
@@ -21,10 +27,27 @@ class AudioTranscriber:
             beam_size=BEAM_SIZE,
             vad_filter=True,
             condition_on_previous_text=True,
+            word_timestamps=True,
         )
 
-        return [
-            {"start": seg.start, "end": seg.end, "text": seg.text.strip()}
-            for seg in segments
-            if seg.text.strip()
-        ]
+        words = []
+
+        for seg in segments:
+            if not seg.words:
+                continue
+            for w in seg.words:
+                words.append({
+                    "start": w.start,
+                    "end": w.end,
+                    "word": w.word,
+                })
+
+        trailing_silence = (
+            audio_duration - words[-1]["end"]
+            if words else audio_duration
+        )
+
+        return {
+            "words": words,
+            "trailing_silence": trailing_silence,
+        }

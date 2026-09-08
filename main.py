@@ -2,6 +2,7 @@ from queue import Queue
 import threading
 import time
 import warnings
+import re
 
 from speech.translator import OfflineTranslator
 
@@ -10,7 +11,7 @@ warnings.filterwarnings("ignore", message="data discontinuity in recording")
 from audio.recorder import AudioRecorder
 from speech.transcriber import AudioTranscriber
 from ui.console import ConsoleUI
-from Config.Config import MAX_AUDIO_QUEUE, WORKER_COUNT
+from Config.Config import *
 from ui.caption_window import CaptionWindow
 from difflib import SequenceMatcher
 
@@ -45,48 +46,8 @@ def is_similar(a, b):
 
     return SequenceMatcher(None, a, b).ratio() > 0.85
 
-
-# def remove_overlap(current, previous):
-
-#     if not previous:
-#         return current
-
-#     current_words = current.split()
-#     previous_words = previous.split()
-
-#     current_lower = [w.lower() for w in current_words]
-#     previous_lower = [w.lower() for w in previous_words]
-
-#     max_overlap = min(
-#         len(current_words),
-#         len(previous_words)
-#     )
-
-#     # 尾巴接頭
-#     for size in range(max_overlap, 2, -1):
-
-#         if (
-#             previous_lower[-size:]
-#             ==
-#             current_lower[:size]
-#         ):
-#             return " ".join(
-#                 current_words[size:]
-#             )
-
-#     # 整段重複
-#     for size in range(max_overlap, 3, -1):
-
-#         if (
-#             current_lower[:size]
-#             ==
-#             previous_lower[:size]
-#         ):
-#             return " ".join(
-#                 current_words[size:]
-#             )
-
-#     return current
+def _normalize_word(w):
+    return re.sub(r"[^\w']", "", w.lower())
 
 def remove_overlap(current, previous, min_overlap_words=2, similarity_threshold=0.8):
 
@@ -96,24 +57,20 @@ def remove_overlap(current, previous, min_overlap_words=2, similarity_threshold=
     current_words = current.split()
     previous_words = previous.split()
 
-    current_lower = [w.lower() for w in current_words]
-    previous_lower = [w.lower() for w in previous_words]
+    # 用去除標點後的版本做比對，但保留原始 current_words 用來組回傳結果
+    current_norm = [_normalize_word(w) for w in current_words]
+    previous_norm = [_normalize_word(w) for w in previous_words]
 
-    matcher = SequenceMatcher(None, previous_lower, current_lower)
+    matcher = SequenceMatcher(None, previous_norm, current_norm)
 
-    # 找出 previous 與 current 之間最長的連續匹配區塊
     match = matcher.find_longest_match(
-        0, len(previous_lower),
-        0, len(current_lower)
+        0, len(previous_norm),
+        0, len(current_norm)
     )
 
-    # match.b 是這段匹配在 current 裡的起始 index
-    # match.b + match.size 是匹配結束的位置（也就是重疊內容結束的地方）
     if match.size >= min_overlap_words:
-        # 確認這段匹配大致落在 previous 的尾巴、current 的開頭
-        # （避免抓到句子中間偶然重複的詞，例如常見的 "the", "and"）
-        tail_ratio = (match.a + match.size) / len(previous_lower)
-        head_ratio = match.b / len(current_lower) if len(current_lower) else 1
+        tail_ratio = (match.a + match.size) / len(previous_norm) if previous_norm else 0
+        head_ratio = match.b / len(current_norm) if current_norm else 1
 
         is_tail_of_previous = tail_ratio > 0.6
         is_head_of_current = head_ratio < 0.4
@@ -122,8 +79,7 @@ def remove_overlap(current, previous, min_overlap_words=2, similarity_threshold=
             remainder = current_words[match.b + match.size:]
             return " ".join(remainder)
 
-    # 退一步：檢查是否整段幾乎相同（例如只是重新辨識、幾乎沒有新內容）
-    overlap_ratio = match.size / max(len(current_lower), 1)
+    overlap_ratio = match.size / max(len(current_norm), 1)
     if overlap_ratio > similarity_threshold:
         return ""
 
@@ -157,73 +113,67 @@ def transcribe_loop(worker_name):
 
             audio_queue.task_done()
 
+NEW_AUDIO_CUTOFF = WINDOW_SECONDS - STEP_SECONDS
+SILENCE_FLUSH_THRESHOLD = 0.5   # 視窗結尾若超過這麼久沒新字，視為真正停頓
+MIN_BUFFER_LEN_FOR_PUNCT_FLUSH = 60   # 從 40 提高到 60，減少短碎句誤觸發
+MIN_BUFFER_LEN_FOR_SILENCE_FLUSH = 20  # 停頓觸發時，門檻可以低一點
+MAX_BUFFER_LEN = 120
+
 
 def translate_loop():
 
-    last_text = ""
-
     sentence_buffer = ""
+    is_first_window = True
 
     while True:
 
-        english_segments = english_queue.get()
+        result = english_queue.get()
 
         try:
+            words = result["words"]
+            trailing_silence = result["trailing_silence"]
 
-            english_text = " ".join(seg["text"] for seg in english_segments).strip()
+            if not words:
+                continue
+
+            if is_first_window:
+                new_words = words
+                is_first_window = False
+            else:
+                new_words = [w for w in words if w["start"] >= NEW_AUDIO_CUTOFF]
+
+            english_text = "".join(w["word"] for w in new_words).strip()
 
             if not english_text:
                 continue
-
-            if len(english_text) < 15:
-                continue
-
-            if is_similar(english_text, last_text):
-                continue
-            # 保存 Whisper 原始輸出
-            original_text = english_text
-
-            # 去除重疊內容
-            english_text = remove_overlap(english_text, last_text)
-
-            if not english_text:
-                continue
-
-            last_text = original_text
 
             sentence_buffer += " " + english_text
-
             sentence_buffer = sentence_buffer.strip()
 
-            # 還沒形成完整句子
-            MIN_BUFFER_LEN_FOR_PUNCT_FLUSH = 40  # 至少要有這麼多字才允許用標點提前送出
+            has_real_pause = trailing_silence > SILENCE_FLUSH_THRESHOLD
 
-            if not (
+            should_flush = (
                 (sentence_buffer.endswith((".", "?", "!")) and len(sentence_buffer) >= MIN_BUFFER_LEN_FOR_PUNCT_FLUSH)
-                or len(sentence_buffer) > 100
-            ):
+                or (has_real_pause and len(sentence_buffer) >= MIN_BUFFER_LEN_FOR_SILENCE_FLUSH)
+                or len(sentence_buffer) > MAX_BUFFER_LEN
+            )
+
+            if not should_flush:
                 print(f"buffer: {sentence_buffer}")
                 continue
 
             start = time.perf_counter()
-
             chinese_text = translator.translate(sentence_buffer)
-
             cost = time.perf_counter() - start
-
             print(f"[Translator] {cost:.2f}s")
 
             chinese_queue.put((sentence_buffer, chinese_text))
-
-            # 清空已翻譯內容
             sentence_buffer = ""
 
         except Exception as ex:
-
             print(f"[Translator] {ex}")
 
         finally:
-
             english_queue.task_done()
 
 
