@@ -1,12 +1,18 @@
-import os
-os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "1"
-
-
+import re
 import time
+from pathlib import Path
+
 import ctranslate2
-from transformers import AutoTokenizer
+import sentencepiece as spm
+
 from Config.Config import *
 
+
+SRC_LANG = "eng_Latn"
+TGT_LANG = "zho_Hant"
+EOS_TOKEN = "</s>"
+
+_SPACE_RE = re.compile(r"\s+")
 
 
 class OfflineTranslator:
@@ -22,10 +28,10 @@ class OfflineTranslator:
 
         start = time.perf_counter()
 
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            translate_model,
-            src_lang="eng_Latn",
+        sp_model_path = str(
+            Path(translate_model) / "sentencepiece.bpe.model"
         )
+        self.sp = spm.SentencePieceProcessor(model_file=sp_model_path)
 
         self.translator = ctranslate2.Translator(
             translate_model_ct2,
@@ -47,13 +53,23 @@ class OfflineTranslator:
 
         print(f"Translator Ready: {time.perf_counter() - start:.2f}s")
 
+    def _encode(self, text):
+        text = _SPACE_RE.sub(" ", text).strip()
+        pieces = self.sp.encode(text, out_type=str)
+        return [SRC_LANG] + pieces + [EOS_TOKEN]
+
+    def _decode(self, pieces):
+        pieces = [
+            p for p in pieces
+            if p not in (SRC_LANG, TGT_LANG, EOS_TOKEN, "<s>", "<pad>", "<unk>")
+        ]
+        return self.sp.decode(pieces)
+
     def translate(self, text):
 
-        source_tokens = self.tokenizer.convert_ids_to_tokens(
-            self.tokenizer.encode(text)
-        )
+        source_tokens = self._encode(text)
 
-        target_prefix = [["zho_Hant"]]
+        target_prefix = [[TGT_LANG]]
 
         results = self.translator.translate_batch(
             [source_tokens],
@@ -63,9 +79,5 @@ class OfflineTranslator:
         )
 
         target_tokens = results[0].hypotheses[0][1:]
-        target_ids = self.tokenizer.convert_tokens_to_ids(target_tokens)
 
-        return self.tokenizer.decode(
-            target_ids,
-            skip_special_tokens=True,
-        )
+        return self._decode(target_tokens)

@@ -28,7 +28,6 @@ pyinstaller `
     --distpath "C:\Users\PC-103\Desktop" `
     --hidden-import=faster_whisper `
     --hidden-import=ctranslate2 `
-    --hidden-import=transformers `
     --exclude-module pandas `
     --exclude-module scipy `
     --exclude-module matplotlib `
