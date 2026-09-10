@@ -6,8 +6,15 @@ from Config.Config import *
 
 class AudioTranscriber:
 
-    def __init__(self):
-        print(whisper_model)
+    def __init__(self, status_callback=None):
+
+        self.status_callback = status_callback
+
+        if self.status_callback:
+            self.status_callback(
+                "語音辨識模型載入中...", "Loading Whisper...", "#FFA500"
+            )
+
         self.model = WhisperModel(
             whisper_model,
             device="cpu",

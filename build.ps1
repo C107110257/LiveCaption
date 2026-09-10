@@ -29,12 +29,18 @@ pyinstaller `
     --hidden-import=faster_whisper `
     --hidden-import=ctranslate2 `
     --hidden-import=transformers `
-    --hidden-import=torch `
     --exclude-module pandas `
     --exclude-module scipy `
     --exclude-module matplotlib `
     --exclude-module IPython `
     --exclude-module jupyter `
+    --exclude-module tensorflow `
+    --exclude-module tensorboard `
+    --exclude-module sklearn `
+    --exclude-module PIL `
+    --exclude-module cv2 `
+    --exclude-module notebook `
+    --exclude-module sphinx `
     --add-data "C:\Users\PC-103\AppData\Local\Programs\Python\Python312\Lib\site-packages\faster_whisper\assets;faster_whisper\assets" `
     main.py
 

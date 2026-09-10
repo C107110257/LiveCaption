@@ -17,7 +17,7 @@ class CaptionWindow:
             bg="black"
         )
 
-        self.root.attributes("-alpha", 0.92) # 半透明
+        self.root.attributes("-alpha", 0.8) # 半透明
 
         window_width = 1000
         window_height = 120

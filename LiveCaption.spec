@@ -6,11 +6,11 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[('C:/Users/PC-103/AppData/Local/Programs/Python/Python312/Lib/site-packages/faster_whisper/assets', 'faster_whisper/assets')],
-    hiddenimports=['faster_whisper', 'ctranslate2', 'transformers', 'torch'],
+    hiddenimports=['faster_whisper', 'ctranslate2', 'transformers'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=['pandas', 'scipy', 'matplotlib', 'IPython', 'jupyter'],
+    excludes=['pandas', 'scipy', 'matplotlib', 'IPython', 'jupyter', 'tensorflow', 'tensorboard', 'sklearn', 'PIL', 'cv2', 'notebook', 'sphinx'],
     noarchive=False,
     optimize=0,
 )

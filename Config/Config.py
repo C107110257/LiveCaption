@@ -49,7 +49,6 @@ STEP_SECONDS = config["step_seconds"]
 BEAM_SIZE = config["beam_size"]
 MAX_AUDIO_QUEUE = config["max_audio_queue"]
 MAX_TEXT_QUEUE = config["max_text_queue"]
-WORKER_COUNT = config["worker_count"]
 
 WHISPER_CPU_THREADS = config.get("whisper_cpu_threads", 4)
 TRANSLATOR_INTRA_THREADS = config.get("translator_intra_threads", 4)
