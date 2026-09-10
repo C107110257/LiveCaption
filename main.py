@@ -38,11 +38,7 @@ def startup():
 
     print_startup_config()
 
-    threading.Thread(
-        name="Recorder",
-        target=recorder.run,
-        daemon=True,
-    ).start()
+    
 
     threading.Thread(
         name="TranslatorLoader",
@@ -73,7 +69,13 @@ def startup():
 
     translator_ready_event.wait()
     whisper_ready_event.wait()
-
+    
+    threading.Thread(
+            name="Recorder",
+            target=recorder.run,
+            daemon=True,
+        ).start()
+    
     caption_window.update_text(
         "系統已就緒",
         "Ready",

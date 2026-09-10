@@ -1,7 +1,14 @@
 import time
 
 from speech.translator import OfflineTranslator
-from Config.Config import WINDOW_SECONDS, STEP_SECONDS
+from Config.Config import (
+    WINDOW_SECONDS,
+    STEP_SECONDS,
+    SILENCE_FLUSH_THRESHOLD,
+    MIN_BUFFER_LEN_FOR_PUNCT_FLUSH,
+    MIN_BUFFER_LEN_FOR_SILENCE_FLUSH,
+    MAX_BUFFER_LEN,
+)
 from pipeline.state import (
     english_queue,
     chinese_queue,
@@ -10,11 +17,10 @@ from pipeline.state import (
 import pipeline.state as state
 
 
+# 滑動視窗裡「新內容」的起始時間點。
+# 例如 window=6s、step=3s，代表每個視窗有 3 秒是上一輪已經
+# 辨識過的重疊音訊，只有 start >= 3.0 的字才是這一輪真正的新內容。
 NEW_AUDIO_CUTOFF = WINDOW_SECONDS - STEP_SECONDS
-SILENCE_FLUSH_THRESHOLD = 0.5
-MIN_BUFFER_LEN_FOR_PUNCT_FLUSH = 60
-MIN_BUFFER_LEN_FOR_SILENCE_FLUSH = 20
-MAX_BUFFER_LEN = 120
 
 
 def load_translator(status_callback):

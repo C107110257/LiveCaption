@@ -1,0 +1,17 @@
+# Models
+models/
+
+# Build
+build/
+dist/
+
+# Python
+__pycache__/
+*.pyc
+
+# VSCode
+.vscode/
+
+# PyInstaller
+*.pkg
+*.pyz

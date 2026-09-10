@@ -22,6 +22,17 @@ class AudioTranscriber:
             cpu_threads=WHISPER_CPU_THREADS,
             num_workers=1,
         )
+        dummy = np.zeros(
+            SAMPLE_RATE,
+            dtype=np.float32
+        )
+
+        list(
+            self.model.transcribe(
+                dummy,
+                language="en"
+            )[0]
+        )
 
     def transcribe(self, audio):
 

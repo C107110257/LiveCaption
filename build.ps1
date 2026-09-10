@@ -19,6 +19,20 @@ if (Test-Path build) {
     Remove-Item build -Recurse -Force
 }
 
+Write-Host "Clean previous output (keep models/)..."
+
+if (Test-Path "$desktopPath\LiveCaption.exe") {
+    Remove-Item "$desktopPath\LiveCaption.exe" -Force
+}
+
+if (Test-Path "$desktopPath\_internal") {
+    Remove-Item "$desktopPath\_internal" -Recurse -Force
+}
+
+if (Test-Path "$desktopPath\Config.json") {
+    Remove-Item "$desktopPath\Config.json" -Force
+}
+
 Write-Host "Build..."
 
 pyinstaller `
@@ -28,6 +42,7 @@ pyinstaller `
     --distpath "C:\Users\PC-103\Desktop" `
     --hidden-import=faster_whisper `
     --hidden-import=ctranslate2 `
+    --hidden-import=transformers `
     --exclude-module pandas `
     --exclude-module scipy `
     --exclude-module matplotlib `
@@ -40,6 +55,7 @@ pyinstaller `
     --exclude-module cv2 `
     --exclude-module notebook `
     --exclude-module sphinx `
+    --exclude-module safetensors `
     --add-data "C:\Users\PC-103\AppData\Local\Programs\Python\Python312\Lib\site-packages\faster_whisper\assets;faster_whisper\assets" `
     main.py
 
@@ -55,14 +71,24 @@ Copy-Item `
     "$desktopPath\Config.json" `
     -Force
 
-Write-Host "Dispatch to 240..."
+Write-Host "Dispatch to 240 (exe/_internal/Config.json only)..."
 
 robocopy `
-    $desktopPath `
-    $publishPath `
+    "$desktopPath\_internal" `
+    "$publishPath\_internal" `
     /MIR `
     /R:1 `
     /W:1
+
+Copy-Item `
+    "$desktopPath\LiveCaption.exe" `
+    "$publishPath\LiveCaption.exe" `
+    -Force
+
+Copy-Item `
+    "$desktopPath\Config.json" `
+    "$publishPath\Config.json" `
+    -Force
 
 Write-Host ""
 Write-Host "Build Complete"
