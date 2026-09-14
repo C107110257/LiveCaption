@@ -1,25 +1,38 @@
-import sys
 import numpy as np
 import soundcard as sc
 
 from collections import deque
 from queue import Full
 
-from Config.Config import SAMPLE_RATE, WINDOW_SECONDS, STEP_SECONDS
+from Config.settings import SAMPLE_RATE, WINDOW_SECONDS, STEP_SECONDS
 
 
-# 這些裝置類型常見不支援 loopback 錄音,自動排除,不用花時間去試
 EXCLUDED_KEYWORDS = ["display audio", "digital output", "s/pdif", "spdif"]
 
 
 class AudioRecorder:
 
-    def __init__(self, queue):
+    def __init__(self, queue, status_callback=None):
+        """
+        status_callback: 選填, callable(is_ready: bool, message: str) -> None
+        用來讓外部(UI)即時知道錄音裝置狀態變化,不傳的話就只能靠 device_ready 旗標被動查詢
+        """
         self.queue = queue
+        self.status_callback = status_callback
+        self.device_ready = False
+
         self.mic = self._find_working_loopback_device()
+        self.device_ready = self.mic is not None
+        self._notify(self.device_ready)
+
+    def _notify(self, is_ready: bool, message: str = ""):
+        if self.status_callback is not None:
+            try:
+                self.status_callback(is_ready, message)
+            except Exception as e:
+                print(f"[Audio][WARNING] status_callback 執行失敗: {e}")
 
     def _test_device_has_signal(self, speaker, test_seconds: float = 1.2) -> bool:
-        """實際錄一小段,確認這個裝置真的能透過 loopback 抓到聲音"""
         try:
             mic = sc.get_microphone(id=speaker.id, include_loopback=True)
             with mic.recorder(samplerate=SAMPLE_RATE) as recorder:
@@ -38,14 +51,11 @@ class AudioRecorder:
         except Exception:
             candidates = speakers
 
-        # 過濾掉已知不支援 loopback 的裝置類型,保留下來的當作候選清單
         valid_candidates = [
             spk for spk in candidates
             if not any(k in spk.name.lower() for k in EXCLUDED_KEYWORDS)
         ]
 
-        # 連篩選後的候選清單都是空的(極端情況),
-        # 就不篩選了,把所有裝置都當候選,絕不讓程式在這裡掛掉
         if not valid_candidates:
             print("[Audio][WARNING] 沒有找到符合條件的裝置類型,改用全部裝置當候選")
             valid_candidates = candidates
@@ -62,8 +72,6 @@ class AudioRecorder:
             else:
                 print(f"[Audio]   無訊號: {spk.name}")
 
-        # 沒有任何裝置測到訊號(可能是還沒開始播放聲音),
-        # 依序嘗試候選清單裡每一個裝置,選第一個能成功建立的,不報錯
         print("[Audio][WARNING] 啟動時所有裝置皆無訊號(可能尚未開始播放聲音),嘗試退回可用裝置...")
 
         for spk in valid_candidates:
@@ -72,8 +80,6 @@ class AudioRecorder:
                 print(f"[Audio][WARNING] 退回使用: {spk.name}")
                 return mic
 
-        # 連退回都失敗,印出完整診斷資訊,但仍然不中斷程式,
-        # 回傳 None,交給 run() 處理成「暫停錄音、持續重試」而不是崩潰
         self._print_diagnostics()
         print("[Audio][ERROR] 找不到任何可建立的 loopback 裝置,錄音將無法啟動,程式繼續執行但不會有字幕產生")
         return None
@@ -133,4 +139,6 @@ class AudioRecorder:
                         self.queue.put_nowait(audio)
 
         except Exception as e:
+            self.device_ready = False
+            self._notify(False, f"錄音中斷: {e}")
             print(f"[Audio][ERROR] 錄音過程中發生例外,錄音已停止: {e}")

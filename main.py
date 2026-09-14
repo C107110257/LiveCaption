@@ -5,7 +5,7 @@ warnings.filterwarnings("ignore", category=SoundcardRuntimeWarning)
 
 from audio.recorder import AudioRecorder
 from ui.caption_window import CaptionWindow
-from Config.Config import *
+from Config.settings import *
 
 from pipeline.state import (
     audio_queue,
@@ -17,7 +17,6 @@ from pipeline.translator_worker import load_translator, translate_loop
 from pipeline.ui_worker import ui_loop
 
 caption_window = CaptionWindow()
-recorder = AudioRecorder(audio_queue)
 
 
 def print_startup_config():
@@ -34,11 +33,24 @@ def print_startup_config():
     print("=" * 50)
 
 
+def on_audio_status_change(is_ready: bool, message: str):
+    """
+    錄音裝置狀態改變時的回呼(初始化失敗 或 錄音中途中斷 都會呼叫這裡)
+    """
+    if not is_ready:
+        caption_window.update_text(
+            "音訊裝置異常",
+            message or "找不到可用的音訊裝置，請確認輸出裝置設定",
+            "#FF4444",
+        )
+
+
 def startup():
 
     print_startup_config()
 
-    
+    # AudioRecorder 移到這裡建立,並掛上狀態回呼
+    recorder = AudioRecorder(audio_queue, status_callback=on_audio_status_change)
 
     threading.Thread(
         name="TranslatorLoader",
@@ -69,13 +81,18 @@ def startup():
 
     translator_ready_event.wait()
     whisper_ready_event.wait()
-    
+
+    if not recorder.device_ready:
+        # 不啟動 Recorder 執行緒,也不顯示 ready
+        # on_audio_status_change 在建立 AudioRecorder 當下就已經顯示過錯誤訊息了
+        return
+
     threading.Thread(
-            name="Recorder",
-            target=recorder.run,
-            daemon=True,
-        ).start()
-    
+        name="Recorder",
+        target=recorder.run,
+        daemon=True,
+    ).start()
+
     caption_window.update_text(
         "系統已就緒",
         "Ready",

@@ -1,6 +1,26 @@
 {
     "models_dir": "\\\\192.168.0.240\\project\\Ken_Lin\\models",
 
+    "ui": {
+        "window_alpha": 0.8,
+        "window_width": 700,
+        "window_height": 120,
+        "bottom_margin": 120,
+        "wrap_length": 700,
+
+        "background_color": "black",
+        "english_text_color": "#DDDDDD",
+        "chinese_default_color": "white",
+
+        "english_font_family": "Segoe UI",
+        "chinese_font_family": "Microsoft JhengHei",
+        "font_size": 14,
+
+        "placeholder_text": "等待字幕...",
+
+        "app_version": "8.7.0"
+    },
+
     "whisper_model": "faster-distil-whisper-medium.en",
     "translate_model": "nllb-200-distilled-1.3B",
     "translate_model_ct2": "nllb-200-distilled-1.3B-ct2",

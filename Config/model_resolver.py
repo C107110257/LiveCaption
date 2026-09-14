@@ -1,27 +1,10 @@
 from pathlib import Path
-import json
 import shutil
 import sys
 import os
 
-if getattr(sys, "frozen", False):
-    BASE_DIR = Path(sys.executable).parent
-else:
-    BASE_DIR = Path(__file__).resolve().parent.parent
 
-CONFIG_FILE = BASE_DIR / "config.json"
-
-with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-    config = json.load(f)
-
-REMOTE_MODELS_DIR = config["models_dir"]
-LOCAL_MODELS_DIR = BASE_DIR / "models"
-
-
-MODEL_REQUIRED_FILES = config.get("model_required_files", {})
-
-
-def is_valid_model(path: Path, model_name: str):
+def is_valid_model(path: Path, model_name: str, required_files_map: dict) -> bool:
 
     if not path.exists():
         return False
@@ -29,7 +12,7 @@ def is_valid_model(path: Path, model_name: str):
     if not any(path.iterdir()):
         return False
 
-    required = MODEL_REQUIRED_FILES.get(model_name, ["config.json"])
+    required = required_files_map.get(model_name, ["config.json"])
 
     for file_name in required:
         if not (path / file_name).exists():
@@ -63,10 +46,12 @@ def print_progress(copied: int, total: int, bar_len: int = 30):
     filled = int(bar_len * ratio)
     bar = "#" * filled + "-" * (bar_len - filled)
     percent = ratio * 100
-    sys.stdout.write(
-        f"\r  [{bar}] {percent:5.1f}%  "
+    line = (
+        f"  [{bar}] {percent:5.1f}%  "
         f"{format_size(copied)}/{format_size(total)}"
     )
+    sys.stdout.write("\r\033[K" + line)  # \033[K 清除從游標到行尾的所有字元
+
     sys.stdout.flush()
 
 
@@ -79,7 +64,7 @@ def copy_file_with_progress(src: str, dst: str, progress_cb, chunk_size: int = 4
                 break
             fdst.write(chunk)
             progress_cb(len(chunk))
-    shutil.copystat(src, dst)  # 保留檔案時間戳等 metadata,行為對齊 copy2
+    shutil.copystat(src, dst)
 
 
 def copy_model_with_progress(remote_path: Path, local_path: Path):
@@ -105,19 +90,24 @@ def copy_model_with_progress(remote_path: Path, local_path: Path):
     print()
 
 
-def resolve_model_path(model_name):
+def resolve_model_path(
+    model_name: str,
+    remote_models_dir: str,
+    local_models_dir: Path,
+    required_files_map: dict,
+) -> str:
 
-    local_path = LOCAL_MODELS_DIR / model_name
-    remote_path = Path(REMOTE_MODELS_DIR) / model_name
+    local_path = local_models_dir / model_name
+    remote_path = Path(remote_models_dir) / model_name
 
-    if is_valid_model(local_path, model_name):
+    if is_valid_model(local_path, model_name, required_files_map):
         print(f"[Startup] Using local model: {model_name}")
         return str(local_path)
 
     print(f"[Startup] Model not found locally: {model_name}")
     print("[Startup] Copying from shared storage, please keep network stable...")
 
-    LOCAL_MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    local_models_dir.mkdir(parents=True, exist_ok=True)
 
     if local_path.exists():
         shutil.rmtree(local_path)
@@ -127,55 +117,8 @@ def resolve_model_path(model_name):
 
     copy_model_with_progress(remote_path, local_path)
 
-    if not is_valid_model(local_path, model_name):
+    if not is_valid_model(local_path, model_name, required_files_map):
         raise RuntimeError(f"Model copy failed: {model_name}")
 
     print(f"[Startup] Done: {model_name}\n")
     return str(local_path)
-
-
-whisper_model = resolve_model_path(config["whisper_model"])
-translate_model = resolve_model_path(config["translate_model"])
-translate_model_ct2 = resolve_model_path(config["translate_model_ct2"])
-
-for model_path in (
-    whisper_model,
-    translate_model,
-    translate_model_ct2,
-):
-    if not Path(model_path).exists():
-        raise FileNotFoundError(f"Model does not exist: {model_path}")
-
-print("[Startup] All models ready.")
-print("[Startup] Initializing...\n")
-
-SAMPLE_RATE = config["sample_rate"]
-WINDOW_SECONDS = config["window_seconds"]
-STEP_SECONDS = config["step_seconds"]
-BEAM_SIZE = config["beam_size"]
-MAX_AUDIO_QUEUE = config["max_audio_queue"]
-MAX_TEXT_QUEUE = config["max_text_queue"]
-
-def scaled_threads(ratio: float, total_cores: int, minimum: int = 1) -> int:
-    """依比例換算執行緒數，至少保留 1 個，不超過總核心數"""
-    count = round(total_cores * ratio)
-    return max(minimum, min(count, total_cores))
-
-
-TOTAL_CORES = os.cpu_count() or 4
-
-WHISPER_CPU_THREADS = scaled_threads(
-    config.get("whisper_cpu_threads_ratio", 0.4), TOTAL_CORES
-)
-TRANSLATOR_INTRA_THREADS = scaled_threads(
-    config.get("translator_intra_threads_ratio", 0.3), TOTAL_CORES
-)
-
-print(f"[Startup] Detected {TOTAL_CORES} CPU cores.")
-print(f"[Startup] whisper_cpu_threads = {WHISPER_CPU_THREADS}")
-print(f"[Startup] translator_intra_threads = {TRANSLATOR_INTRA_THREADS}\n")
-
-SILENCE_FLUSH_THRESHOLD = config.get("silence_flush_threshold", 0.5)
-MIN_BUFFER_LEN_FOR_PUNCT_FLUSH = config.get("min_buffer_len_for_punct_flush", 60)
-MIN_BUFFER_LEN_FOR_SILENCE_FLUSH = config.get("min_buffer_len_for_silence_flush", 20)
-MAX_BUFFER_LEN = config.get("max_buffer_len", 120)
