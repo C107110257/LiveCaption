@@ -55,11 +55,3 @@ def is_valid_model(path: Path, model_name: str, required_files_map: dict) -> boo
             return False
 
     return True
-
-
-def format_size(num_bytes: float) -> str:
-    for unit in ("B", "KB", "MB", "GB"):
-        if num_bytes < 1024:
-            return f"{num_bytes:.1f}{unit}"
-        num_bytes /= 1024
-    return f"{num_bytes:.1f}TB"

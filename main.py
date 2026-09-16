@@ -105,7 +105,7 @@ def startup():
 
 
 def main():
-    disable_progress_bars()
+    
     threading.Thread(
         target=startup,
         daemon=True,
