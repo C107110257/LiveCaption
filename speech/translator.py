@@ -5,7 +5,7 @@ os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "1"
 import time
 import ctranslate2
 from transformers import AutoTokenizer
-from Config.settings import *
+from config.settings import *
 
 
 

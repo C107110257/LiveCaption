@@ -1,7 +1,7 @@
 import time
 
 from speech.translator import OfflineTranslator
-from Config.settings import (
+from config.settings import (
     WINDOW_SECONDS,
     STEP_SECONDS,
     SILENCE_FLUSH_THRESHOLD,

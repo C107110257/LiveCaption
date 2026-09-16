@@ -1,8 +1,9 @@
 from pathlib import Path
+import os
 
-from Config.json_loader import load_config, get_base_dir
-from Config.model_resolver import resolve_model_path
-from Config.system_info import get_thread_counts
+from .json_loader import load_config, get_base_dir
+from .model_provisioning.model_resolver import resolve_model_path
+from .system_info import get_thread_counts
 
 
 config = load_config()
@@ -11,14 +12,24 @@ BASE_DIR = get_base_dir()
 REMOTE_MODELS_DIR = config["models_dir"]
 LOCAL_MODELS_DIR = BASE_DIR / "models"
 MODEL_REQUIRED_FILES = config.get("model_required_files", {})
+HUGGINGFACE_REPOS = config.get("huggingface_repos", {})
+PREFER_HUGGINGFACE = config.get("prefer_huggingface", True)
+
+# 若模型是 private，才需要 token；已用 `hf auth login` 登入過的機器可留 None
+# 需要時用環境變數帶入，不要寫死在程式碼裡，例如：
+#   PowerShell: $env:HF_TOKEN = "hf_xxxx"
+HUGGINGFACE_TOKEN = os.environ.get("HF_TOKEN") or config.get("huggingface_token")
 
 
 def _resolve(model_key: str) -> str:
     return resolve_model_path(
-        config[model_key],
-        REMOTE_MODELS_DIR,
-        LOCAL_MODELS_DIR,
-        MODEL_REQUIRED_FILES,
+        model_name=config[model_key],
+        remote_models_dir=REMOTE_MODELS_DIR,
+        local_models_dir=LOCAL_MODELS_DIR,
+        required_files_map=MODEL_REQUIRED_FILES,
+        huggingface_repos=HUGGINGFACE_REPOS,
+        prefer_huggingface=PREFER_HUGGINGFACE,
+        huggingface_token=HUGGINGFACE_TOKEN,
     )
 
 

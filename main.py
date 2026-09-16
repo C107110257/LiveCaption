@@ -1,11 +1,15 @@
 import threading
 import warnings
+import os
+os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+os.environ["HF_HUB_DISABLE_XET"] = "1"
+
 from soundcard.mediafoundation import SoundcardRuntimeWarning
 warnings.filterwarnings("ignore", category=SoundcardRuntimeWarning)
 
 from audio.recorder import AudioRecorder
 from ui.caption_window import CaptionWindow
-from Config.settings import *
+from config.settings import *
 
 from pipeline.state import (
     audio_queue,
@@ -101,7 +105,7 @@ def startup():
 
 
 def main():
-
+    disable_progress_bars()
     threading.Thread(
         target=startup,
         daemon=True,

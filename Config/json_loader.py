@@ -2,7 +2,6 @@ from pathlib import Path
 import json
 import sys
 
-
 def get_base_dir() -> Path:
     if getattr(sys, "frozen", False):
         return Path(sys.executable).parent

@@ -29,8 +29,8 @@ if (Test-Path "$desktopPath\_internal") {
     Remove-Item "$desktopPath\_internal" -Recurse -Force
 }
 
-if (Test-Path "$desktopPath\Config.json") {
-    Remove-Item "$desktopPath\Config.json" -Force
+if (Test-Path "$desktopPath\config.json") {
+    Remove-Item "$desktopPath\config.json" -Force
 }
 
 Write-Host "Build..."
@@ -67,11 +67,11 @@ if (-not (Test-Path "$desktopPath\LiveCaption.exe")) {
 }
 
 Copy-Item `
-    ".\Config.json" `
-    "$desktopPath\Config.json" `
+    ".\config.json" `
+    "$desktopPath\config.json" `
     -Force
 
-Write-Host "Dispatch to 240 (exe/_internal/Config.json only)..."
+Write-Host "Dispatch to 240 (exe/_internal/config.json only)..."
 
 robocopy `
     "$desktopPath\_internal" `
@@ -86,8 +86,8 @@ Copy-Item `
     -Force
 
 Copy-Item `
-    "$desktopPath\Config.json" `
-    "$publishPath\Config.json" `
+    "$desktopPath\config.json" `
+    "$publishPath\config.json" `
     -Force
 
 Write-Host ""

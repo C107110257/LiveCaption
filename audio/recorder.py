@@ -4,7 +4,7 @@ import soundcard as sc
 from collections import deque
 from queue import Full
 
-from Config.settings import SAMPLE_RATE, WINDOW_SECONDS, STEP_SECONDS
+from config.settings import SAMPLE_RATE, WINDOW_SECONDS, STEP_SECONDS
 
 
 EXCLUDED_KEYWORDS = ["display audio", "digital output", "s/pdif", "spdif"]

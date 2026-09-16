@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 
-from Config.settings import (
+from config.settings import (
     WINDOW_ALPHA,
     WINDOW_WIDTH,
     WINDOW_HEIGHT,

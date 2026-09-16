@@ -1,7 +1,7 @@
 import numpy as np
 
 from faster_whisper import WhisperModel
-from Config.settings import *
+from config.settings import *
 
 
 class AudioTranscriber:
