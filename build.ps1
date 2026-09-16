@@ -71,24 +71,35 @@ Copy-Item `
     "$desktopPath\config.json" `
     -Force
 
-Write-Host "Dispatch to 240 (exe/_internal/config.json only)..."
+Write-Host "Check 240 availability..."
 
-robocopy `
-    "$desktopPath\_internal" `
-    "$publishPath\_internal" `
-    /MIR `
-    /R:1 `
-    /W:1
+if (Test-Path $publishPath) {
 
-Copy-Item `
-    "$desktopPath\LiveCaption.exe" `
-    "$publishPath\LiveCaption.exe" `
-    -Force
+    Write-Host "Dispatch to 240 (exe/_internal/config.json only)..."
 
-Copy-Item `
-    "$desktopPath\config.json" `
-    "$publishPath\config.json" `
-    -Force
+    robocopy `
+        "$desktopPath\_internal" `
+        "$publishPath\_internal" `
+        /MIR `
+        /R:1 `
+        /W:1
 
-Write-Host ""
-Write-Host "Build Complete"
+    Copy-Item `
+        "$desktopPath\LiveCaption.exe" `
+        "$publishPath\LiveCaption.exe" `
+        -Force
+
+    Copy-Item `
+        "$desktopPath\config.json" `
+        "$publishPath\config.json" `
+        -Force
+
+    Write-Host ""
+    Write-Host "Build Complete (dispatched to 240)"
+
+} else {
+
+    Write-Host "240 not reachable, skip dispatch."
+    Write-Host ""
+    Write-Host "Build Complete (local only, not dispatched to 240)"
+}

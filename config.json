@@ -47,7 +47,6 @@
             "shared_vocabulary.json"
         ]
     },
-    "huggingface_token": "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",
     "huggingface_repos": {
         "faster-distil-whisper-medium.en": "Systran/faster-distil-whisper-medium.en",
         "nllb-200-distilled-1.3B": "facebook/nllb-200-distilled-1.3B",

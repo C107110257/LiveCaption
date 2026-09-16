@@ -15,10 +15,6 @@ MODEL_REQUIRED_FILES = config.get("model_required_files", {})
 HUGGINGFACE_REPOS = config.get("huggingface_repos", {})
 PREFER_HUGGINGFACE = config.get("prefer_huggingface", True)
 
-# 若模型是 private，才需要 token；已用 `hf auth login` 登入過的機器可留 None
-# 需要時用環境變數帶入，不要寫死在程式碼裡，例如：
-#   PowerShell: $env:HF_TOKEN = "hf_xxxx"
-HUGGINGFACE_TOKEN = os.environ.get("HF_TOKEN") or config.get("huggingface_token")
 
 
 def _resolve(model_key: str) -> str:
@@ -29,7 +25,6 @@ def _resolve(model_key: str) -> str:
         required_files_map=MODEL_REQUIRED_FILES,
         huggingface_repos=HUGGINGFACE_REPOS,
         prefer_huggingface=PREFER_HUGGINGFACE,
-        huggingface_token=HUGGINGFACE_TOKEN,
     )
 
 

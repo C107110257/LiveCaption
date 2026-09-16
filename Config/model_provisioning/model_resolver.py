@@ -42,7 +42,6 @@ def resolve_model_path(
     required_files_map: dict,
     huggingface_repos: Optional[dict] = None,
     prefer_huggingface: bool = True,
-    huggingface_token: Optional[str] = None,
 ) -> str:
     """
     解析模型本機路徑：
@@ -74,7 +73,6 @@ def resolve_model_path(
             huggingface_source.fetch_from_huggingface(
                 repo_id=repo_id,
                 local_path=tmp_path,
-                token=huggingface_token,
                 allow_patterns=required_files_map.get(model_name),
             )
             if is_valid_model(tmp_path, model_name, required_files_map):
