@@ -1,4 +1,5 @@
-$desktopPath = "C:\Users\PC-103\Desktop\LiveCaption"
+$desktopFolder = [Environment]::GetFolderPath("Desktop")
+$desktopPath = Join-Path $desktopFolder "LiveCaption"
 $publishPath = "\\192.168.0.240\project\Ken_Lin\LiveCaption"
 
 Write-Host "Check LiveCaption..."
@@ -12,6 +13,19 @@ if ($proc) {
 
     exit 1
 }
+
+Write-Host "Locate faster_whisper assets..."
+
+$fasterWhisperDir = python -c "import faster_whisper, os; print(os.path.dirname(faster_whisper.__file__))"
+
+if (-not $fasterWhisperDir -or -not (Test-Path $fasterWhisperDir)) {
+    Write-Host "Could not locate faster_whisper package. Is it installed in this environment?"
+    exit 1
+}
+
+$fasterWhisperAssets = Join-Path $fasterWhisperDir "assets"
+
+Write-Host "Found: $fasterWhisperAssets"
 
 Write-Host "Clean build..."
 
@@ -39,7 +53,7 @@ pyinstaller `
     --noconfirm `
     --onedir `
     --name LiveCaption `
-    --distpath "C:\Users\PC-103\Desktop" `
+    --distpath "$desktopFolder" `
     --hidden-import=faster_whisper `
     --hidden-import=ctranslate2 `
     --hidden-import=transformers `
@@ -56,7 +70,11 @@ pyinstaller `
     --exclude-module notebook `
     --exclude-module sphinx `
     --exclude-module safetensors `
-    --add-data "C:\Users\PC-103\AppData\Local\Programs\Python\Python312\Lib\site-packages\faster_whisper\assets;faster_whisper\assets" `
+    --exclude-module rich `
+    --exclude-module typer `
+    --exclude-module click `
+    --exclude-module jinja2 `
+    --add-data "$fasterWhisperAssets;faster_whisper\assets" `
     main.py
 
 if (-not (Test-Path "$desktopPath\LiveCaption.exe")) {

@@ -1,10 +1,5 @@
 import sys
 
-try:
-    from tqdm.auto import tqdm as _TqdmBase
-except ImportError:  # tqdm 一定會隨 huggingface_hub 裝進來，這裡只是保險
-    _TqdmBase = object
-
 
 def format_size(num_bytes: float) -> str:
     for unit in ("B", "KB", "MB", "GB"):
@@ -55,19 +50,3 @@ class ProgressReporter:
 
     def close(self) -> None:
         finish_progress()
-
-
-class BarTqdm(_TqdmBase):
-    """
-    給 huggingface_hub 的 snapshot_download(tqdm_class=...) 用的相容類別。
-    介面上是一個 tqdm，但畫面改用 print_progress 的樣式，跟 240 備援來源一致。
-    """
-
-    def display(self, msg=None, pos=None):
-        total = self.total or 0
-        print_progress(self.n, total, prefix=(self.desc + " " if self.desc else ""))
-
-    def close(self):
-        super().close()
-        if not getattr(self, "leave", False):
-            finish_progress()

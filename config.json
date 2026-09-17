@@ -68,5 +68,7 @@
     "silence_flush_threshold": 0.5,
     "min_buffer_len_for_punct_flush": 20,
     "min_buffer_len_for_silence_flush": 20,
-    "max_buffer_len": 120
+    "max_buffer_len": 120,
+    "save_transcript": true,
+    "transcript_dir": "transcripts"
 }

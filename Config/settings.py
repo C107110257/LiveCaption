@@ -52,6 +52,9 @@ MIN_BUFFER_LEN_FOR_PUNCT_FLUSH = config.get("min_buffer_len_for_punct_flush", 60
 MIN_BUFFER_LEN_FOR_SILENCE_FLUSH = config.get("min_buffer_len_for_silence_flush", 20)
 MAX_BUFFER_LEN = config.get("max_buffer_len", 120)
 
+SAVE_TRANSCRIPT = config.get("save_transcript", True)
+TRANSCRIPT_DIR = BASE_DIR / config.get("transcript_dir", "transcripts")
+
 ui_config = config.get("ui", {})
 
 WINDOW_ALPHA = ui_config.get("window_alpha", 0.8)

@@ -11,11 +11,13 @@ from audio.recorder import AudioRecorder
 from ui.caption_window import CaptionWindow
 from config.settings import *
 
+import pipeline.state as state
 from pipeline.state import (
     audio_queue,
     translator_ready_event,
     whisper_ready_event,
 )
+from pipeline.transcript_logger import TranscriptLogger
 from pipeline.whisper_worker import transcribe_loop
 from pipeline.translator_worker import load_translator, translate_loop
 from pipeline.ui_worker import ui_loop
@@ -34,6 +36,7 @@ def print_startup_config():
     print(f"  Beam Size         : {BEAM_SIZE}")
     print(f"  Whisper Threads   : {WHISPER_CPU_THREADS}")
     print(f"  Translator Threads: {TRANSLATOR_INTRA_THREADS}")
+    print(f"  Save Transcript   : {SAVE_TRANSCRIPT}")
     print("=" * 50)
 
 
@@ -52,6 +55,11 @@ def on_audio_status_change(is_ready: bool, message: str):
 def startup():
 
     print_startup_config()
+
+    state.transcript_logger = TranscriptLogger(
+        output_dir=TRANSCRIPT_DIR,
+        enabled=SAVE_TRANSCRIPT,
+    )
 
     # AudioRecorder 移到這裡建立,並掛上狀態回呼
     recorder = AudioRecorder(audio_queue, status_callback=on_audio_status_change)
@@ -105,13 +113,17 @@ def startup():
 
 
 def main():
-    
+
     threading.Thread(
         target=startup,
         daemon=True,
     ).start()
 
-    caption_window.run()
+    try:
+        caption_window.run()
+    finally:
+        if state.transcript_logger is not None:
+            state.transcript_logger.close()
 
 
 if __name__ == "__main__":

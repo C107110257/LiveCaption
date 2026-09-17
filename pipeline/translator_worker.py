@@ -77,6 +77,9 @@ def translate_loop():
             cost = time.perf_counter() - start
             print(f"[Translator] {cost:.2f}s")
 
+            if state.transcript_logger is not None:
+                state.transcript_logger.log(sentence_buffer, chinese_text)
+
             chinese_queue.put((sentence_buffer, chinese_text))
             sentence_buffer = ""
 
