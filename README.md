@@ -14,6 +14,7 @@
 - **即時語音轉文字**：使用 [faster-whisper](https://github.com/SYSTRAN/faster-whisper)（distil-whisper medium.en，CTranslate2 加速）
 - **即時翻譯**：使用 Meta 的 [NLLB-200](https://github.com/facebookresearch/fairseq/tree/nllb) distilled 1.3B 模型（CTranslate2 轉檔版），將辨識出的英文即時翻成繁體中文
 - **半透明疊加字幕視窗**：可自訂透明度、字型、字級、視窗大小與位置
+- **逐字稿自動存檔**：每次執行時，英文原文與中文翻譯的配對會即時寫入 `transcripts/` 資料夾下的 txt 檔（檔名帶啟動時間），可用 `config.json` 的 `save_transcript` 開關
 - **模型自動就緒**：程式啟動時自動檢查本機模型是否完整，缺少或不完整時會自動下載（優先 Hugging Face，備援內部共用儲存），不需要手動準備模型
 
 ## 環境需求
@@ -87,6 +88,7 @@ python main.py
 1. 程式會先確認/下載模型，並印出目前使用的執行緒配置
 2. 自動偵測可用的系統音訊 loopback 裝置
 3. 顯示半透明字幕視窗，播放中的英文語音會即時被辨識並翻譯成中文顯示
+4. 若 `save_transcript` 為開（預設開），每組翻譯結果會同步寫入 `transcripts/transcript_<啟動時間>.txt`
 
 關閉視窗即可結束程式。
 
@@ -100,6 +102,8 @@ python main.py
 | `sample_rate` / `window_seconds` / `step_seconds` | 音訊擷取的取樣率與切窗參數 |
 | `beam_size` | Whisper 解碼的 beam search 寬度，越大越準但越慢 |
 | `whisper_cpu_threads_ratio` / `translator_intra_threads_ratio` | 依 CPU 核心數比例配置各模型的執行緒數量 |
+| `save_transcript` | 是否把每組英中翻譯結果存成 txt（預設 `true`） |
+| `transcript_dir` | 逐字稿存檔資料夾（預設 `transcripts`，已加入 `.gitignore`） |
 | `ui.*` | 字幕視窗外觀（透明度、大小、字型、顏色、位置） |
 
 完整欄位請直接參考專案根目錄的 `config.json`。
@@ -110,7 +114,7 @@ python main.py
 .\build.ps1
 ```
 
-會依 `LiveCaption.spec` 用 PyInstaller 打包成獨立執行檔。
+會依目前登入帳號的桌面路徑，用 PyInstaller 打包成獨立執行檔（`--onedir` 模式，exe 旁邊會有一個 `_internal` 資料夾，這是正常的，不建議改成單一 exe，詳見程式碼註解）。內部共用儲存的發布步驟若偵測不到該路徑會自動跳過，不影響本機 build 是否成功。
 
 ## 專案結構
 
@@ -135,11 +139,13 @@ test_audio/
 │   └── translator.py            # NLLB 翻譯
 ├── pipeline/
 │   ├── state.py                 # 跨執行緒共用的佇列與事件
+│   ├── transcript_logger.py     # 英中翻譯配對寫入 txt
 │   ├── whisper_worker.py
 │   ├── translator_worker.py
 │   └── ui_worker.py
 ├── ui/
 │   └── caption_window.py        # 半透明字幕視窗
+├── transcripts/                 # 逐字稿存檔位置（.gitignore）
 └── models/                      # 下載後的模型存放位置（.gitignore）
 ```
 
