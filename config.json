@@ -63,7 +63,7 @@
 
     "whisper_cpu_threads_ratio": 0.2,
     "translator_intra_threads_ratio": 0.1,
-
+    "device": "cpu",
 
     "silence_flush_threshold": 0.5,
     "min_buffer_len_for_punct_flush": 20,

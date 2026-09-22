@@ -29,7 +29,7 @@ class OfflineTranslator:
 
         self.translator = ctranslate2.Translator(
             translate_model_ct2,
-            device="cpu",
+            device=DEVICE,
             inter_threads=1,
             intra_threads=TRANSLATOR_INTRA_THREADS,
         )

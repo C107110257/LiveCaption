@@ -1,5 +1,4 @@
 from pathlib import Path
-import os
 
 from .json_loader import load_config, get_base_dir
 from .model_provisioning.model_resolver import resolve_model_path
@@ -14,7 +13,6 @@ LOCAL_MODELS_DIR = BASE_DIR / "models"
 MODEL_REQUIRED_FILES = config.get("model_required_files", {})
 HUGGINGFACE_REPOS = config.get("huggingface_repos", {})
 PREFER_HUGGINGFACE = config.get("prefer_huggingface", True)
-
 
 
 def _resolve(model_key: str) -> str:
@@ -39,6 +37,8 @@ for model_path in (whisper_model, translate_model, translate_model_ct2):
 print("[Startup] All models ready.")
 
 WHISPER_CPU_THREADS, TRANSLATOR_INTRA_THREADS = get_thread_counts(config)
+
+DEVICE = config.get("device", "auto")
 
 SAMPLE_RATE = config["sample_rate"]
 WINDOW_SECONDS = config["window_seconds"]

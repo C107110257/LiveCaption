@@ -2,7 +2,7 @@
 
 即時英文語音辨識 + 中文翻譯的桌面字幕疊加工具。擷取系統播放的聲音（例如視訊會議、線上課程、Youtube 影片），即時轉成英文文字並翻譯成中文，以半透明字幕視窗顯示在畫面上。
 
-![Demo：一邊播放 NASA 直播，一邊即時顯示英文辨識與中文翻譯字幕](./assets/demo.png)
+![Demo：一邊播放 NASA 直播，一邊即時顯示英文辨識與中文翻譯字幕](./demo.png)
 
 ```
 英文語音 → Whisper 轉錄 → NLLB 翻譯 → 半透明字幕視窗
@@ -21,18 +21,16 @@
 
 - Windows（音訊擷取使用 loopback 裝置，目前僅支援 Windows）
 - Python 3.12+
-- 建議有獨立顯示卡可加速推論（CPU 也可執行，速度較慢）
 
 ## 安裝
 
 ```powershell
-git clone <你的 repo 網址>
-cd test_audio
+git clone https://github.com/C107110257/LiveCaption.git
+cd LiveCaption
 pip install -r requirements.txt
-copy config.example.json config.json
 ```
 
-複製出來的 `config.json` 裡的 `models_dir` 是內部共用儲存路徑（一般使用者用不到，`prefer_huggingface: true` 時會直接跳過，見下方「模型準備」）。
+`config.json` 直接包含在專案裡，不需要另外複製或設定，`models_dir` 是內部共用儲存路徑（一般使用者用不到，`prefer_huggingface: true` 時會直接跳過，見下方「模型準備」）。
 
 主要相依套件：
 
@@ -119,7 +117,7 @@ python main.py
 ## 專案結構
 
 ```
-test_audio/
+LiveCaption/
 ├── main.py                      # 程式進入點
 ├── config.json                  # 設定檔
 ├── config/
